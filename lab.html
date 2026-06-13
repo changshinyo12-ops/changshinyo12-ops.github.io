@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Live Lab | DNA Sequence Analyzer | Chang Hsin-Yu</title>
+<meta name="description" content="An interactive in-browser DNA sequence analyzer: GC content, TERRA telomeric motif detection, transcription, translation, and base composition, built by Chang Hsin-Yu.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+<div class="mesh"></div><div class="grain"></div>
+<nav class="nav"><div class="nav-inner">
+  <a class="brand" href="index.html"><span class="dot"></span>Chang Hsin-Yu</a>
+  <div class="nav-links"><a href="index.html">Home</a><a href="research.html">Research</a><a href="lab.html">Lab</a><a href="writing.html">Writing</a><a href="journey.html">Journey</a></div>
+  <a class="nav-cta" href="journey.html#cv">Resume ↓</a>
+  <button class="nav-toggle" onclick="toggleNav()">☰</button>
+</div></nav>
+
+<header class="page-hero wrap">
+  <span class="eyebrow">Interactive · my own ML model + browser tools</span>
+  <h1>The <span class="gradient-text">DNA Lab.</span></h1>
+  <p class="lead">Two things to play with: my deep-learning <strong style="color:var(--text)">G-quadruplex predictor</strong> running live below, and a from-scratch DNA analyzer further down the page.</p>
+</header>
+
+<section class="section wrap" style="padding-top:20px">
+  <div class="lab-panel reveal">
+    <span class="eyebrow">🤖 Live model · G4 Predictor</span>
+    <h2 style="font-size:clamp(1.6rem,4vw,2.4rem);margin:12px 0">Will this DNA fold into a G-quadruplex?</h2>
+    <p style="color:var(--muted);max-width:760px">I trained and deployed this model myself. Type in a DNA string (A, C, G, T) and it returns a verdict with a probability score for whether the sequence forms a <strong style="color:var(--text)">G-quadruplex</strong>, a four-stranded structure that matters for telomeres, gene regulation, and the kind of biology I study. It runs on Hugging Face and is embedded right here.</p>
+    <div style="margin:18px 0 10px;border-radius:12px;overflow:hidden;border:1px solid var(--line-strong)">
+      <iframe src="https://justin980-g4-predictor.hf.space/?__theme=dark" title="G4 Predictor" style="width:100%;height:620px;border:0;display:block" loading="lazy" allow="clipboard-read; clipboard-write"></iframe>
+    </div>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://huggingface.co/spaces/Justin980/g4-predictor" target="_blank" rel="noopener" data-magnetic>Open G4 Predictor in full ↗</a>
+      <a class="btn btn-ghost" href="#analyzer" data-magnetic>Or try the DNA analyzer ↓</a>
+    </div>
+    <p style="color:var(--muted-2);font-size:.8rem;margin-top:12px">If the model is asleep it may take a few seconds to wake up. Built and hosted by me on Hugging Face Spaces.</p>
+  </div>
+
+  <div class="lab-panel reveal" id="analyzer">
+    <span class="eyebrow">🔬 Browser tool · DNA analyzer</span>
+    <h2 style="font-size:clamp(1.5rem,3.5vw,2rem);margin:12px 0 18px">Paste a sequence, see it broken down</h2>
+    <label class="eyebrow" for="seq">Input sequence</label>
+    <textarea id="seq" class="seq-input mt-s" spellcheck="false" oninput="analyze()">TTAGGGTTAGGGTTAGGGTTAGGGTTAGGGTTAGGG</textarea>
+    <div class="chip-row">
+      <span class="chip" onclick="preset('TTAGGGTTAGGGTTAGGGTTAGGGTTAGGGTTAGGG')">🧬 TERRA telomeric repeat</span>
+      <span class="chip" onclick="preset('ATGGCCATTGTAATGGGCCGCTGAAAGGGTGCCCGATAG')">🟢 ORF with start codon</span>
+      <span class="chip" onclick="preset('GCGCGCGCGCGCGCGCGCGCGCGC')">🔵 GC-rich</span>
+      <span class="chip" onclick="preset('ATATATATATATATATATATATAT')">🟡 AT-rich</span>
+      <span class="chip" onclick="randomSeq()">🎲 Random 60 bp</span>
+    </div>
+    <div class="metric-grid">
+      <div class="metric"><div class="v gradient-text" id="mLen">0</div><div class="k">length (bp)</div></div>
+      <div class="metric"><div class="v" id="mGC" style="color:var(--cyan)">0%</div><div class="k">GC content</div></div>
+      <div class="metric"><div class="v" id="mTm" style="color:var(--amber)">0°C</div><div class="k">melting temp</div></div>
+      <div class="metric"><div class="v" id="mMotif" style="color:var(--lime)">...</div><div class="k">TERRA motif</div></div>
+    </div>
+  </div>
+
+  <div class="lab-panel reveal">
+    <span class="eyebrow">Base composition</span>
+    <div class="mt-s" id="bars"></div>
+  </div>
+
+  <div class="feature">
+    <div class="lab-panel reveal" style="margin:0">
+      <span class="eyebrow">Transcription → mRNA</span>
+      <p class="mt-s" style="color:var(--muted);font-size:.85rem">DNA template read 5'→3', T replaced by U.</p>
+      <div id="rna" style="font-family:var(--mono);word-break:break-all;color:var(--cyan);margin-top:10px;line-height:1.8"></div>
+    </div>
+    <div class="lab-panel reveal" style="margin:0">
+      <span class="eyebrow">Translation → protein</span>
+      <p class="mt-s" style="color:var(--muted);font-size:.85rem">First reading frame, standard codon table.</p>
+      <div id="prot" style="font-family:var(--mono);word-break:break-all;color:var(--lime);margin-top:10px;line-height:1.8"></div>
+    </div>
+  </div>
+
+  <div class="lab-panel reveal mt-m">
+    <span class="eyebrow">Colored sequence map</span>
+    <div id="map" style="font-family:var(--mono);word-break:break-all;line-height:2;margin-top:10px;font-size:1.05rem;letter-spacing:.08em"></div>
+  </div>
+
+  <p class="center" style="color:var(--muted-2);font-size:.82rem;margin-top:20px">A teaching/demo tool. Melting temperature uses the basic Wallace rule for short sequences. Built with vanilla JavaScript. <a href="https://github.com/changshinyo12-ops" style="color:var(--cyan)">view source on GitHub</a>.</p>
+</section>
+
+<footer class="footer"><div class="wrap"><div class="footer-grid">
+  <div><h3 class="gradient-text">Want the code?</h3><p class="lead">This analyzer is open source. Fork it, break it, learn from it.</p><div class="hero-actions"><a class="btn btn-primary" href="https://github.com/changshinyo12-ops" data-magnetic>GitHub →</a></div></div>
+  <div class="footer-links"><strong style="color:var(--text)">Navigate</strong><a href="index.html">Home</a><a href="research.html">Research</a><a href="writing.html">Writing</a><a href="journey.html">Journey & CV</a></div>
+</div><div class="footer-bottom"><span>© 2026 Chang Hsin-Yu</span><span>100% client-side 🔒</span></div></div></footer>
+
+<script src="assets/main.js"></script>
+<script>
+const COLORS={A:'#c8ff3d',T:'#38e8ff',G:'#ff4da6',C:'#9b6bff',U:'#38e8ff'};
+const CODON={TTT:'F',TTC:'F',TTA:'L',TTG:'L',CTT:'L',CTC:'L',CTA:'L',CTG:'L',ATT:'I',ATC:'I',ATA:'I',ATG:'M',GTT:'V',GTC:'V',GTA:'V',GTG:'V',TCT:'S',TCC:'S',TCA:'S',TCG:'S',CCT:'P',CCC:'P',CCA:'P',CCG:'P',ACT:'T',ACC:'T',ACA:'T',ACG:'T',GCT:'A',GCC:'A',GCA:'A',GCG:'A',TAT:'Y',TAC:'Y',TAA:'*',TAG:'*',CAT:'H',CAC:'H',CAA:'Q',CAG:'Q',AAT:'N',AAC:'N',AAA:'K',AAG:'K',GAT:'D',GAC:'D',GAA:'E',GAG:'E',TGT:'C',TGC:'C',TGA:'*',TGG:'W',CGT:'R',CGC:'R',CGA:'R',CGG:'R',AGT:'S',AGC:'S',AGA:'R',AGG:'R',GGT:'G',GGC:'G',GGA:'G',GGG:'G'};
+function clean(s){return (s||'').toUpperCase().replace(/[^ATGC]/g,'');}
+function preset(s){document.getElementById('seq').value=s;analyze();}
+function randomSeq(){let b='ATGC',s='';for(let i=0;i<60;i++)s+=b[Math.floor(Math.random()*4)];preset(s);}
+function analyze(){
+  const raw=document.getElementById('seq').value;
+  const s=clean(raw);
+  const len=s.length;
+  const c={A:0,T:0,G:0,C:0};for(const ch of s)c[ch]++;
+  const gc=len?((c.G+c.C)/len*100):0;
+  document.getElementById('mLen').textContent=len;
+  document.getElementById('mGC').textContent=gc.toFixed(1)+'%';
+  // Wallace rule Tm
+  const tm=len?(len<14?(c.A+c.T)*2+(c.G+c.C)*4:64.9+41*((c.G+c.C-16.4)/len)):0;
+  document.getElementById('mTm').textContent=Math.round(tm)+'°C';
+  document.getElementById('mMotif').textContent=/TTAGGG/.test(s)?'found ✓':'none';
+  document.getElementById('mMotif').style.color=/TTAGGG/.test(s)?'var(--lime)':'var(--muted-2)';
+  // bars
+  const bars=document.getElementById('bars');bars.innerHTML='';
+  for(const base of ['A','T','G','C']){
+    const pct=len?(c[base]/len*100):0;
+    bars.insertAdjacentHTML('beforeend',
+      `<div style="margin:10px 0"><div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:.8rem;color:var(--muted)"><span style="color:${COLORS[base]}">${base}</span><span>${c[base]} · ${pct.toFixed(1)}%</span></div><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${COLORS[base]}"></div></div></div>`);
+  }
+  // transcription
+  const rna=s.replace(/T/g,'U');
+  document.getElementById('rna').textContent=rna||'...';
+  // translation
+  let prot='';for(let i=0;i+3<=s.length;i+=3){prot+=CODON[s.substr(i,3)]||'?';}
+  document.getElementById('prot').innerHTML=(prot||'...').replace(/\*/g,'<span style="color:var(--magenta)">*</span>');
+  // colored map
+  document.getElementById('map').innerHTML=s.length?[...s].map(ch=>`<span style="color:${COLORS[ch]}">${ch}</span>`).join(''):'<span style="color:var(--muted-2)">enter a valid DNA sequence (A, T, G, C)</span>';
+}
+analyze();
+</script>
+</body>
+</html>
